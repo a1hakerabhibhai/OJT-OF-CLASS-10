@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7fa;
+            color: #333;
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .tab button {
+            background-color: #ffffff;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: background-color 0.3s, color 0.3s;
+            font-weight: 500;
+            color: #555;
+        }
+        .tab button:hover {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+        .tab button.active {
+            background-color: #1a73e8;
+            color: #ffffff;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            background-color: #ffffff;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #ffffff;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #1a73e8;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        tr:hover {
+            background-color: #e8f0fe;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: inline-block;
+            width: 150px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #1a73e8;
+            outline: none;
+            box-shadow: 0 0 5px rgba(26, 115, 232, 0.3);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        button:not(.tablinks) {
+            background-color: #1a73e8;
+            color: #ffffff;
+        }
+        button:not(.tablinks):hover {
+            background-color: #1557b0;
+            transform: translateY(-1px);
+        }
+        button:not(.tablinks):active {
+            transform: translateY(0);
+        }
+        button[onclick*='cancelForm'], button[onclick*='deleteAll'], button[onclick*='deleteRow'] {
+            background-color: #e57373;
+        }
+        button[onclick*='cancelForm']:hover, button[onclick*='deleteAll']:hover, button[onclick*='deleteRow']:hover {
+            background-color: #d32f2f;
+        }
+        button[onclick*='editRow'] {
+            background-color: #26a69a;
+        }
+        button[onclick*='editRow']:hover {
+            background-color: #1e857b;
+        }
+    </style>
+</head>
+<body>
+    <h1>School Management System</h1>
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'Students')">Students</button>
+        <button class="tablinks" onclick="openTab(event, 'Guardians')">Guardians</button>
+        <button class="tablinks" onclick="openTab(event, 'Teachers')">Teachers</button>
+        <button class="tablinks" onclick="openTab(event, 'TeachingRoutine')">Teaching Routine</button>
+        <button class="tablinks" onclick="openTab(event, 'Marks')">Marks</button>
+    </div>
+
+    <!-- Students Tab -->
+    <div id="Students" class="tabcontent">
+        <h2>Students</h2>
+        <div>
+            <button onclick="showAddForm('student')">Add Student</button>
+            <button onclick="sortTable('students', 'first_name')">Sort by First Name</button>
+            <button onclick="viewTable('students')">View All</button>
+            <button onclick="deleteAll('students')">Delete All</button>
+        </div>
+        <div id="studentForm" style="display:none;">
+            <h3>Add/Update Student</h3>
+            <div class="form-group">
+                <label>Student ID:</label>
+                <input type="text" id="student_id" readonly>
+            </div>
+            <div class="form-group">
+                <label>Roll No:</label>
+                <input type="text" id="roll_no">
+            </div>
+            <div class="form-group">
+                <label>First Name:</label>
+                <input type="text" id="first_name">
+            </div>
+            <div class="form-group">
+                <label>Middle Name:</label>
+                <input type="text" id="middle_name">
+            </div>
+            <div class="form-group">
+                <label>Last Name:</label>
+                <input type="text" id="last_name">
+            </div>
+            <div class="form-group">
+                <label>Class:</label>
+                <input type="text" id="class">
+            </div>
+            <div class="form-group">
+                <label>Date of Birth:</label>
+                <input type="date" id="dob">
+            </div>
+            <div class="form-group">
+                <label>Contact No:</label>
+                <input type="text" id="contact_no">
+            </div>
+            <div class="form-group">
+                <label>Address:</label>
+                <input type="text" id="address">
+            </div>
+            <div class="form-group">
+                <label>Age:</label>
+                <input type="number" id="age">
+            </div>
+            <div class="form-group">
+                <label>Gender:</label>
+                <select id="gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <button onclick="saveStudent()">Save</button>
+            <button onclick="cancelForm('studentForm')">Cancel</button>
+        </div>
+        <table id="studentsTable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Roll No</th>
+                    <th>First Name</th>
+                    <th>Middle Name</th>
+                    <th>Last Name</th>
+                    <th>Class</th>
+                    <th>DOB</th>
+                    <th>Contact No</th>
+                    <th>Address</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="studentsBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Guardians Tab -->
+    <div id="Guardians" class="tabcontent">
+        <h2>Guardians</h2>
+        <div>
+            <button onclick="showAddForm('guardian')">Add Guardian</button>
+            <button onclick="sortTable('guardians', 'father_name')">Sort by Father Name</button>
+            <button onclick="viewTable('guardians')">View All</button>
+            <button onclick="deleteAll('guardians')">Delete All</button>
+        </div>
+        <div id="guardianForm" style="display:none;">
+            <h3>Add/Update Guardian</h3>
+            <div class="form-group">
+                <label>Student ID:</label>
+                <input type="text" id="guardian_student_id">
+            </div>
+            <div class="form-group">
+                <label>Father Name:</label>
+                <input type="text" id="father_name">
+            </div>
+            <div class="form-group">
+                <label>Mother Name:</label>
+                <input type="text" id="mother_name">
+            </div>
+            <div class="form-group">
+                <label>Contact No:</label>
+                <input type="text" id="guardian_contact_no">
+            </div>
+            <div class="form-group">
+                <label>Address:</label>
+                <input type="text" id="guardian_address">
+            </div>
+            <button onclick="saveGuardian()">Save</button>
+            <button onclick="cancelForm('guardianForm')">Cancel</button>
+        </div>
+        <table id="guardiansTable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Father Name</th>
+                    <th>Mother Name</th>
+                    <th>Contact No</th>
+                    <th>Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="guardiansBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Teachers Tab -->
+    <div id="Teachers" class="tabcontent">
+        <h2>Teachers</h2>
+        <div>
+            <button onclick="showAddForm('teacher')">Add Teacher</button>
+            <button onclick="sortTable('teachers', 'teacher_name')">Sort by Name</button>
+            <button onclick="viewTable('teachers')">View All</button>
+            <button onclick="deleteAll('teachers')">Delete All</button>
+        </div>
+        <div id="teacherForm" style="display:none;">
+            <h3>Add/Update Teacher</h3>
+            <div class="form-group">
+                <label>Teacher ID:</label>
+                <input type="text" id="teacher_id" readonly>
+            </div>
+            <div class="form-group">
+                <label>Teacher Name:</label>
+                <input type="text" id="teacher_name">
+            </div>
+            <div class="form-group">
+                <label>Address:</label>
+                <input type="text" id="teacher_address">
+            </div>
+            <div class="form-group">
+                <label>Age:</label>
+                <input type="number" id="teacher_age">
+            </div>
+            <div class="form-group">
+                <label>Contact No:</label>
+                <input type="text" id="teacher_contact_no">
+            </div>
+            <div class="form-group">
+                <label>Gender:</label>
+                <select id="teacher_gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <button onclick="saveTeacher()">Save</button>
+            <button onclick="cancelForm('teacherForm')">Cancel</button>
+        </div>
+        <table id="teachersTable">
+            <thead>
+                <tr>
+                    <th>Teacher ID</th>
+                    <th>Name</th>
+                    <th>Address</th>
+                    <th>Age</th>
+                    <th>Contact No</th>
+                    <th>Gender</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="teachersBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Teaching Routine Tab -->
+    <div id="TeachingRoutine" class="tabcontent">
+        <h2>Teaching Routine</h2>
+        <div>
+            <button onclick="showAddForm('routine')">Add Routine</button>
+            <button onclick="sortTable('teaching_routine', 'teacher_name')">Sort by Teacher Name</button>
+            <button onclick="viewTable('teaching_routine')">View All</button>
+            <button onclick="deleteAll('teaching_routine')">Delete All</button>
+        </div>
+        <div id="routineForm" style="display:none;">
+            <h3>Add/Update Routine</h3>
+            <div class="form-group">
+                <label>Teacher ID:</label>
+                <input type="text" id="routine_teacher_id">
+            </div>
+            <div class="form-group">
+                <label>Teacher Name:</label>
+                <input type="text" id="routine_teacher_name">
+            </div>
+            <div class="form-group">
+                <label>Teaching Subject:</label>
+                <input type="text" id="teaching_subject">
+            </div>
+            <div class="form-group">
+                <label>Teaching Class:</label>
+                <input type="text" id="teaching_class">
+            </div>
+            <div class="form-group">
+                <label>Class Time:</label>
+                <input type="text" id="teaching_class_time">
+            </div>
+            <button onclick="saveRoutine()">Save</button>
+            <button onclick="cancelForm('routineForm')">Cancel</button>
+        </div>
+        <table id="routineTable">
+            <thead>
+                <tr>
+                    <th>Teacher ID</th>
+                    <th>Teacher Name</th>
+                    <th>Subject</th>
+                    <th>Class</th>
+                    <th>Class Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="routineBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Marks Tab -->
+    <div id="Marks" class="tabcontent">
+        <h2>Student Marks</h2>
+        <div>
+            <button onclick="showAddForm('marks')">Add Marks</button>
+            <button onclick="sortTable('marks', 'student_id')">Sort by Student ID</button>
+            <button onclick="viewTable('marks')">View All</button>
+            <button onclick="deleteAll('marks')">Delete All</button>
+        </div>
+        <div id="marksForm" style="display:none;">
+            <h3>Add/Update Marks</h3>
+            <div class="form-group">
+                <label>Student ID:</label>
+                <input type="text" id="marks_student_id">
+            </div>
+            <div class="form-group">
+                <label>English:</label>
+                <input type="number" id="english" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Nepali:</label>
+                <input type="number" id="nepali" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Science:</label>
+                <input type="number" id="science" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Math:</label>
+                <input type="number" id="math" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Social Studies:</label>
+                <input type="number" id="social_studies" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Optional Math:</label>
+                <input type="number" id="optional_math" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Computer:</label>
+                <input type="number" id="computer" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Health:</label>
+                <input type="number" id="health" min="0" max="100">
+            </div>
+            <button onclick="saveMarks()">Save</button>
+            <button onclick="cancelForm('marksForm')">Cancel</button>
+        </div>
+        <table id="marksTable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>English</th>
+                    <th>Nepali</th>
+                    <th>Science</th>
+                    <th>Math</th>
+                    <th>Social Studies</th>
+                    <th>Optional Math</th>
+                    <th>Computer</th>
+                    <th>Health</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="marksBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let db;
+
+        async function initDB() {
+            try {
+                const SQL = await initSqlJs({ 
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` 
+                });
+                db = new SQL.Database();
+                db.run(`
+                    CREATE TABLE students (
+                        student_id TEXT PRIMARY KEY,
+                        roll_no TEXT,
+                        first_name TEXT,
+                        middle_name TEXT,
+                        last_name TEXT,
+                        class TEXT,
+                        dob TEXT,
+                        contact_no TEXT,
+                        address TEXT,
+                        age INTEGER,
+                        gender TEXT
+                    );
+                    CREATE TABLE guardians (
+                        student_id TEXT PRIMARY KEY,
+                        father_name TEXT,
+                        mother_name TEXT,
+                        contact_no TEXT,
+                        address TEXT,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+                    CREATE TABLE teachers (
+                        teacher_id TEXT PRIMARY KEY,
+                        teacher_name TEXT,
+                        address TEXT,
+                        age INTEGER,
+                        contact_no TEXT,
+                        gender TEXT
+                    );
+                    CREATE TABLE teaching_routine (
+                        teacher_id TEXT,
+                        teacher_name TEXT,
+                        teaching_subject TEXT,
+                        teaching_class TEXT NOT NULL,
+                        teaching_class_time TEXT,
+                        PRIMARY KEY (teacher_id, teaching_class, teaching_class_time),
+                        FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id)
+                    );
+                    CREATE TABLE marks (
+                        student_id TEXT PRIMARY KEY,
+                        english INTEGER,
+                        nepali INTEGER,
+                        science INTEGER,
+                        math INTEGER,
+                        social_studies INTEGER,
+                        optional_math INTEGER,
+                        computer INTEGER,
+                        health INTEGER,
+                        FOREIGN KEY (student_id) REFERENCES students(student_id)
+                    );
+                `);
+            } catch (error) {
+                console.error('Failed to initialize database:', error);
+                alert('Error initializing database. Please check your network or try again later.');
+            }
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = 'none';
+            }
+            const tablinks = document.getElementsByClassName("tablinks");
+            for (let i = i < 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = 'block';
+            evt.currentTarget.className += " active";
+            viewTable(tabName.toLowerCase());
+        }
+
+        function showAddForm(type) {
+            document.getElementById(`${type}Form`).style.display = 'block';
+            document.getElementById(`${type}_id`).value = (type === 'student' || type === 'teacher') ? generateUUID() : '';
+            clearForm(type);
+        }
+
+        function clearForm(type) {
+            const form = document.getElementById(`${type}Form`);
+            const inputs = document.getElementsByTagName('input');
+            for (let input of inputs) {
+                if (!input.readonly) input.value = '';
+            }
+            const selectType = document.getElementsByTagName('select');
+            for(let select of selectType) {
+                select.selectedIndex = 0;
+            }
+        }
+
+        function cancelForm(formId) {
+            ) {
+            document.getElementById(formId).style.display = 'none';
+            clearForm(formId.replace('Form', ''));
+        }
+
+        function saveStudent() {
+            try {
+                const student_id = document.getElementById('student_id').value;
+                const roll_no = document.getElementById('roll_no').value;
+                const first_name = document.getElementById('first_name').value;
+                const middle_name = document.getElementById('middle_name').value;
+                const last_name = document.getElementById('last_name').value;
+                const class_ = document.getElementById('class').value;
+                const dob = document.getElementById('dob').value;
+                const contact_no = document.getElementById('contact_no').value;
+                const address = document.getElementById('address').value;
+                const age = document.getElementById('age').value;
+                const gender = document.getElementById('gender').value;
+
+                const stmt = db.prepare(`
+                    INSERT OR REPLACE INTO students (student_id, roll_no, first_name, middle_name, last_name, class, dob, contact_no, address, age, gender)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `);
+                stmt.run([student_id, roll_no, first_name, middle_name, last_name, class_, dob, contact_no, address, age, gender]);
+                stmt.free();
+                cancelForm('studentForm');
+                viewTable('students');
+            } catch (error) {
+                console.error('Error saving student:', error);
+                alert('Failed to save student. Please check your input and try again.');
+            }
+        }
+
+        function saveGuardian() {
+            try {
+                const student_id = document.getElementById('guardian_student_id').value;
+                const father_name = document.getElementById('father_name').value;
+                const mother_name = document.getElementById('mother_name').value;
+                const contact_no = document.getElementById('guardian_contact').value);
+                const address = document.getElementById('guardian_address').value;
+
+                const stmt = db.prepare(`
+                    INSERT OR REPLACE INTO guardians (student_id, father_name, mother_name, contact_no, address)
+                    VALUES (?, ?, ?, ?, ?)
+                `);
+                stmt.run([student_id, father_name, mother_name, contact_no, address]);
+                stmt.free();
+                cancelForm('guardianForm');
+                viewTable('guardians');
+            } catch (error) {
+                console.error('Error saving guardian:', error);
+                alert('Failed to save guardian. Please check your input and try again.');
+            }
+        }
+
+        function saveTeacher() {
+            try {
+                const teacher_id = document.getElementById('teacher_id').value;
+                const teacher_name = document.getElementById('teacher_name').value;
+                const address = document.getElementById('teacher_address').value;
+                const age = document.getElementById('teacher_age').value;
+                const contact_no = document.getElementById('teacher_contact_no').value;
+                const gender = document.getElementById('teacher_gender').value;
+
+                const stmt = db.prepare(`
+                    INSERT OR REPLACE INTO teachers (teacher_id, teacher_name, address, age, contact_no, gender)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `);
+                stmt.run([teacher_id, teacher_name, address, age, contact_no, gender]);
+                stmt.free();
+                cancelForm('teacherForm');
+                viewTable('teachers');
+            } catch (error) {
+                console.error('Error saving teacher:', error);
+                alert('Failed to save teacher. Please check your input and try again.');
+            }
+        }
+
+        function saveRoutine() {
+            try {
+                const teacher_id = document.getElementById('routine_teacher_id').value;
+                const teacher_name = document.getElementById('routine_teacher_name').value);
+                const teaching_subject = document.getElementById('teaching_subject').value);
+                const teaching_class = document.getElementById('teaching_class').value;
+                const teaching_class_time = document.getElementById('teaching_class_time').value);
+
+                const stmt = db.prepare(`
+                    INSERT OR REPLACE INTO teaching_routine (teacher_id, teacher_name, teaching_subject, teaching_class, teaching_class_time)
+                    VALUES (?, ?, ?, ?, ?)
+                `);
+                stmt.run([teacher_id, teacher_name, teaching_subject, teaching_class, teaching_class_time]);
+                stmt.free();
+                cancelForm('routineForm');
+                viewTable('teaching_routine');
+            } catch (error) {
+                console.error('Error saving routine:', error);
+                alert('Failed to save routine. Please check your input and try again.');
+            }
+        }
+
+        function saveMarks() {
+            try {
+                const student_id = document.getElementById('marks_student_id').value;
+                const english = document.getElementById('english').value;
+                const nepali = document.getElementById('nepali').value;
+                const science = document.getElementById('science').value;
+                const math = document.getElementById('math').value;
+                const social_studies = document.getElementById('social_stud').value;
+                const optional_math = document.getElementById('optional_math').value;
+                const computer = document.getElementById('computer').value;
+                const health = document.getElementById('health').value;
+
+                // Validate marks
+                const subjects = { english, nepali, science, math, social_studies, optional_math, computer, health };
+                for (let [subject, value] of Object.entries(subjects)) {
+                    if (value !== '' && (isNaN(value) || value < 0 || value > 100) {
+                        alert(`Invalid marks for ${value}}. Marks must be between 0 and 100.`);
+                        return;
+                    }
+                }
+
+                const stmt = db.prepare(`
+                    INSERT OR REPLACE INTO marks (student_id, english, nepali, science, math, social_studies, optional_math, computer, health)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `));
+                stmt.run([
+                    student_id,
+                    english || null,
+                    nepali || null,
+                    science || null,
+                    math || null,
+                    social_studies || null,
+                    optional_math || null,
+                    computer || null,
+                    health || null
+                ]);
+                stmt.free();
+                cancelForm('marksForm');
+                viewTable('marks');
+            } catch (error) {
+                console.error('Error saving marks:', error);
+                alert('Failed to save marks. Please check your input and try again.');
+            }
+        }
+
+        function viewTable(tableName) {
+            let query;
+            let headers;
+            let bodyId;
+            switch (tableName) {
+                case 'students':
+                    query = 'SELECT * FROM students';
+                    headers = ['student_id', 'roll_no', 'first_name', 'middle_name', 'last_name', 'class', 'dob', 'contact_no', 'address', 'age', 'gender'];
+                    bodyId = 'studentsBody';
+                case 'guardians':
+                    break;
+                    query = 'SELECT * FROM guardians';
+                    headers = ['student_id', 'father_name', 'mother_name', 'contact_no', 'address'];
+                    bodyId = 'guardiansBody';
+                    break;
+                case 'teachers':
+                    query = 'SELECT * FROM teachers';
+                    headers = ['teacher_id', 'teacher_name', 'address', 'age', 'contact_no', 'gender'];
+                    bodyId = 'teachersBody';
+                    break;
+                case 'teaching_routine':
+                    query = 'SELECT * FROM teaching_routine';
+                    headers = ['teacher_id', 'teacher_name', 'teaching_subject', 'teaching_class', 'teaching_class_time'];
+                    bodyId = 'routineBody';
+                    break;
+                case 'marks':
+                    query = 'SELECT * FROM marks';
+                    headers = ['student_id', 'english', 'nepali', 'science', 'math', 'social_studies', 'optional_math', 'computer', 'health']];
+                    bodyId = 'marksBody';
+                    break;
+            }
+
+            try {
+                const results = db.exec(query);
+                const tbody = document.getElementById(bodyId);
+                tbody.innerHTML = '';
+                if (results.length > 0) {
+                    for (let row of results[0].values) {
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < row.length; i++) {
+                            const td = document.createElement('td');
+                            td.textContent = row[i] || '';
+                            tr.appendChild(td);
+                        }
+                        const actionTd = document.createElement('td');
+                        const key = tableName === 'teaching_routine' 
+                            ? `${row[0]}|${row[3]}|${row[4]}` 
+                            : row[0];
+                        actionTd.innerHTML = `
+                            <button onclick="editRow('${tableName}', '${key}')">Edit</button>
+                            <button onclick="deleteRow('${tableName}', '${key}')">Delete</button>
+                        `;
+                        tr.appendChild(actionTd);
+                        tr.appendChild(tr);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error viewing table ${tableName}:`, error);
+                alert(`Failed to load table ${tableName}. Please try again.`);
+            }
+        }
+
+        function editRow(tableName, id) {
+            let query;
+            let formId;
+            switch (tableName) {
+                case 'students':
+                    query = `SELECT * FROM students WHERE student_id = ?`;
+                    formId = 'studentForm';
+                    break;
+                case 'guardians':
+                    query = `SELECT * FROM guardians WHERE student_id = ?`;
+                    formId = 'guardianForm';
+                    break;
+                case 'teachers':
+                    query = `SELECT * FROM teachers WHERE teacher_id = ?`;
+                    formId = 'teacherForm';
+                    break;
+                case 'teaching_routine':
+                    query = `SELECT * FROM teaching_routine WHERE teacher_id = ? AND teaching_class = ? AND teaching_class_time = ?`;
+                    formId = 'routineForm';
+                    break;
+                case 'marks':
+                    query = `SELECT * FROM marks WHERE student_id = ?`;
+                    formId = 'marksForm';
+                    break;
+            }
+
+            try {
+                const stmt = db.prepare(query);
+                if (tableName === 'teaching_routine') {
+                    const [teacher_id, teaching_class, teaching_class_time] = id.split('|');
+                    stmt.bind([teacher_id, teaching_class, teaching_class_time]);
+                } else {
+                    stmt.bind([id]);
+                }
+                if (stmt.step()) {
+                    const row = stmt.get();
+                    document.getElementById(formId).style.display = 'block';
+                    const inputs = document.getElementById(formId).getElementsByTagName('input');
+                    const selects = document.getElementById(formId).getElementsByTagName('select');
+                    let index = 0;
+                    for (let input of inputs) {
+                        if (!input.readonly) {
+                            input.value = row[index++] || '';
+                        } else {
+                            input.value = tableName === 'teaching_routine' ? teacher_id : id;
+                        }
+                    }
+                    for (let select of selects) {
+                        select.value = row[index++] || '';
+                    }
+                } else {
+                    alert('Record not found.');
+                }
+                stmt.free();
+            } catch (error) {
+                console.error(`Error editing row in ${tableName}:`, error);
+                alert(`Failed to edit record in ${tableName}. Please try again.`);
+            }
+        }
+
+        function deleteRow(tableName, id) {
+            let query;
+            try {
+                switch (tableName) {
+                    case 'students':
+                        query = `DELETE FROM students WHERE student_id = ?`;
+                        break;
+                    case 'guardians':
+                        query = `DELETE FROM guardians WHERE student_id = ?`;
+                        break;
+                    case 'teachers':
+                        query = `DELETE FROM teachers WHERE teacher_id = ?`;
+                        break;
+                    case 'teaching_routine':
+                        query = `DELETE FROM teaching_routine WHERE teacher_id = ? AND teaching_class = ? AND teaching_class_time = ?`;
+                        break;
+                    case 'marks':
+                        query = `DELETE FROM marks WHERE student_id = ?`;
+                        break;
+                }
+                const stmt = db.prepare(query);
+                if (tableName === 'teaching_routine') {
+                    const [teacher_id, teaching_class, teaching_class_time] = id.split('|');
+                    stmt.run([teacher_id, teaching_class, teaching_class_time]);
+                } else {
+                    stmt.run([id]);
+                }
+                stmt.free();
+                viewTable(tableName);
+            } catch (error) {
+                console.error(`Error deleting row in ${tableName}:`, error);
+                alert(`Failed to delete record in ${tableName}. Please try again.`);
+            }
+        }
+
+        function deleteAll(tableName) {
+            if (!confirm(`Are you sure you want to delete all records from ${tableName}? This action cannot be undone.`)) {
+                return;
+            }
+            try {
+                let query;
+                switch (tableName) {
+                    case 'students':
+                        query = `DELETE FROM students`;
+                        break;
+                    case 'guardians':
+                        query = `DELETE FROM guardians`;
+                        break;
+                    case 'teachers':
+                        query = `DELETE FROM teachers`;
+                        break;
+                    case 'teaching_routine':
+                        query = `DELETE FROM teaching_routine`;
+                        break;
+                    case 'marks':
+                        query = `DELETE FROM marks`;
+                        break;
+                }
+                db.exec(query);
+                viewTable(tableName);
+                alert(`All records from ${tableName}} have been deleted.`);
+            } catch (error) {
+                console.error(`Error deleting all records from ${tableName}:`, error);
+                alert(`Failed to delete all records from ${tableName}}. Please try again.`);
+            }
+        }
+
+        function sortTable(tableName, columns) {
+            const allowedColumns = {
+                students: ['student_id', 'roll_no', 'first_name', 'middle_name', 'last_name', 'class', 'dob', 'contact_no', 'address', 'age', 'gender'],
+                guardians: ['student_id', 'father_name', 'mother_name', 'contact_no', 'address'],
+                teachers: ['teacher_id', 'teacher_name', 'address', 'age', 'contact_no', 'gender'],
+                teaching_routine: ['teacher_id', 'teacher_name', 'teaching_subject', 'teaching_class', 'teaching_class_time'],
+                marks: ['student_id', 'english', 'nepali', 'science', 'math', 'social_studies', 'optional_math', 'computer', 'health']
+            };
+
+            if (!allowedColumns[tableName].includes(column)) {
+                console.error(`Invalid column for sorting: ${column}`);
+                alert('Invalid sort column selected.');
+                return;
+            }
+
+            let query;
+            let headers;
+            let bodyId;
+            switch (tableName) {
+                case 'students':
+                    query = `SELECT * FROM students ORDER BY ${column}`;
+                    headers = allowedColumns.students;
+                    bodyId = 'studentsBody';
+                    break;
+                case 'guardians':
+                    query = `SELECT * FROM guardians ORDER BY ${column}`;
+                    headers = allowedColumns.guardians;
+                    bodyId = 'guardiansBody';
+                    break;
+                case 'teachers':
+                    query = `SELECT * FROM teachers ORDER BY ${column}`;
+                    headers = allowedColumns.teachers;
+                    bodyId = 'teachersBody';
+                    break;
+                case 'teaching_routine':
+                    query = `SELECT * FROM teaching_routine ORDER BY ${column}`;
+                    headers = allowedColumns.teaching_routine;
+                    bodyId = 'routineBody';
+                    break;
+                case 'marks':
+                    query = `SELECT * FROM marks ORDER BY ${column}`;
+                    headers = allowedColumns.marks;
+                    bodyId = 'marksBody';
+                    break;
+            }
+
+            try {
+                const results = db.exec(query);
+                const tbody = document.getElementById(bodyId);
+                tbody.innerHTML = '';
+                if (results.length > 0) {
+                    for (let row of results[0].values) {
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < row.length; i++) {
+                            const td = document.createElement('td');
+                            td.textContent = row[i] || '';
+                            tr.appendChild(td);
+                        }
+                        const actionTd = document.createElement('td');
+                        const key = tableName === 'teaching_routine' 
+                            ? `${row[0]}|${row[3]}|${row[4]}` 
+                            : row[0];
+                        actionTd.innerHTML = `
+                            <button onclick="editRow('${tableName}', '${key}')">Edit</button>
+                            <button onclick="deleteRow('${tableName}', '${key}')">Delete</button>
+                        `;
+                        tr.appendChild(actionTd);
+                        tbody.appendChild(tr);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error sorting table ${tableName}:`, error);
+                alert(`Failed to sort table ${tableName}}. Please try again.`);
+            }
+        }
+
+        initDB().then(() => {
+            if (db) {
+                document.getElementById('Students').style.display = 'block';
+                document.getElementsByClassName('tablinks')[0].className += ' active';
+                viewTable('students');
+            } else {
+                console.error('Database initialization failed.');
+                alert('Database is not available. Please refresh the page.');
+            }
+        }).catch(error => {
+            console.error('Initialization error.', error);
+            alert('Failed to load the application. Please check your network and try again.');
+        });
+    </script>
+</body>
+</html>
